@@ -79,7 +79,46 @@ else
     echo " Powerlevel10k 테마가 이미 존재합니다."
 fi
 
-# 6. .zshrc 설정 파일 작성 (기존 파일 백업)
+# 6. LazyVim 설치 및 설정
+NVIM_CONFIG_DIR="$HOME/.config/nvim"
+if [ ! -d "$NVIM_CONFIG_DIR" ] || [ -z "$(ls -A "$NVIM_CONFIG_DIR" 2>/dev/null)" ]; then
+    echo " LazyVim을 설치합니다..."
+    # 기존 Neovim 관련 디렉토리 백업
+    for dir in "$HOME/.config/nvim" "$HOME/.local/share/nvim" "$HOME/.local/state/nvim" "$HOME/.cache/nvim"; do
+        if [ -d "$dir" ]; then
+            echo "--> 기존 디렉토리 백업: $dir -> ${dir}.bak"
+            mv "$dir" "${dir}.bak"
+        fi
+    done
+    git clone https://github.com/LazyVim/starter "$NVIM_CONFIG_DIR"
+    rm -rf "$NVIM_CONFIG_DIR/.git"
+    echo " LazyVim 설치 완료."
+else
+    echo " Neovim 설정 디렉토리가 이미 존재합니다. LazyVim 설치를 건너뜁니다."
+fi
+
+# LazyVim 커스텀 옵션 설정 (relativenumber: false)
+LAZYVIM_OPTIONS_FILE="$NVIM_CONFIG_DIR/lua/plugins/options.lua"
+mkdir -p "$(dirname "$LAZYVIM_OPTIONS_FILE")"
+if [ ! -f "$LAZYVIM_OPTIONS_FILE" ]; then
+    echo " LazyVim 커스텀 옵션 파일을 생성합니다..."
+    cat <<'LUAEOF' >"$LAZYVIM_OPTIONS_FILE"
+-- LazyVim 커스텀 옵션 오버라이드
+return {
+  {
+    "LazyVim/LazyVim",
+    opts = function()
+      vim.opt.relativenumber = false
+    end,
+  },
+}
+LUAEOF
+    echo " LazyVim 옵션 파일 생성 완료: $LAZYVIM_OPTIONS_FILE"
+else
+    echo " LazyVim 옵션 파일이 이미 존재합니다."
+fi
+
+# 7. .zshrc 설정 파일 작성 (기존 파일 백업)
 ZSHRC="$HOME/.zshrc"
 if [ -f "$ZSHRC" ]; then
     echo " 기존 .zshrc 파일을 .zshrc.bak으로 백업합니다."
@@ -146,7 +185,7 @@ if [ -f "$(brew --prefix nvm)/nvm.sh" ]; then
   source "$(brew --prefix nvm)/nvm.sh"
 fi
 
-# jEnv 설정
+# jenv 설정
 export PATH="$HOME/.jenv/bin:$PATH"
 if command -v jenv &>/dev/null; then
   eval "$(jenv init -)"
